@@ -1,6 +1,8 @@
 *~
 Configuration/LOW_dist_metres.txt
 Configuration/MID_dist_metres.txt
+Configuration/LOW_dist_metres.csv
+Configuration/MID_dist_metres.csv
 Configuration/plotstuff
 Configuration/TODO
 Configuration/plot_array.py

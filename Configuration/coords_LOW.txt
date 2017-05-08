@@ -1,3 +1,4 @@
+Number Label Degrees_Longitude Degrees_Latitude
 0	ArrayCentre	116.764448	-26.824722
 1	C1	116.765540	-26.825982
 2	C2	116.763920	-26.824005
