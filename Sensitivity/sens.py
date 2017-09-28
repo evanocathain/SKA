@@ -10,6 +10,7 @@
 # 1. tidy up, add opacity, zenith angle and temp transforms etc.
 # 2. read in array configuration CSV files
 # 3. read in Haslam map for specific and average gl,gb values and ranges
+# 4. add a check that the zenith angle is possible for the given sky coords!
 #
 
 # Load some useful packages
@@ -21,21 +22,28 @@ import matplotlib.pyplot as plt
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
-#parser.add_argument('-i', dest='input_file', help='set the input file name (default: file)', default="file")
-#parser.add_argument('-p1', type=float, dest='p1', help='set the lowest period (default: 0.1 seconds)', default=0.100)
 parser.add_argument('-radius', type=float, dest='radius', help='choose distance from the array centre, in km, for chosen sub-array (default: entire array)', default=150.0)
 parser.add_argument('-glgb', nargs=2, type=float, dest='coord', help='enter specific Galactic coordinates to use (default: gl=180.0, gb=-90.0)', default=[180.0,-90.0])
 parser.add_argument('-tel', dest='tel', help='choose telescope (SKA or MeerKAT, default: SKA)', default="SKA")
-#parser.add_argument('-update', dest='update', help='update to current FRBCAT sources (default: false)', action="store_true",default=False)
+parser.add_argument('-nelements', type=int, dest='nelements', help='choose the inner nelements elements (default: entire array)', default=197)
+parser.add_argument('-pwv', type=float, dest='pwv', help='choose a precipitable water vapo(u)r value in mm (default: 5.0)', default=5.0)
+parser.add_argument('-zenith', type=float, dest='zenith', help='choose a zenith angle in degrees (default: 0.0)', default=0.0)
 parser.add_argument('--version', action='version', version='%(prog)s 0.0.1')
 args = parser.parse_args()
 
+# Set values from command line inputs
 tel = args.tel
 gl = args.coord[0]
 gb = args.coord[1]
+zenith = args.zenith
+wpv = args.wpv
+radius = args.radius
+nelements = args.nelements
 
-speedoflight = 3.0e+8 # m/s - need to do this properly with astropy
-wavelength = lambda freqGHz: 1.0e-9*speedoflight/freqGHz # need to do this properly with astropy
+# Some basic stuff - could do this better with astropy!
+speedoflight = 3.0e+8 # m/s 
+wavelength = lambda freqGHz: 1.0e-9*speedoflight/freqGHz
+h_over_k = 4.8e-11 # Planck's constant divided by Boltzmann's constant in s*K
 
 if tel == "SKA":
     D = 15.0 # dish diameter in metres
@@ -53,80 +61,75 @@ if tel == "MeerKAT":
     Ap   = 0.89     #?? # unitless constant
     As   = 0.98     #?? # unitless constant
 
+# Aperture efficiency
 delta   = 2*(Ap*epsp*epsp + As*epss*epss)**0.5
 DeltaPh = lambda freqGHz: 2*m.pi*delta/wavelength(freqGHz)
 etaPh = lambda freqGHz: np.exp(-(DeltaPh(freqGHz))**2.0) # NB the square is missing in Robert's document
 etaD  = lambda freqGHz: 1.0 - 20.0*(wavelength(freqGHz)/D)**(1.5)
+etaA  = lambda freqGHz: etaF(freqGHz)*etaPh(freqGHz)*etaD(freqGHz)   # Aperture efficiency
+
+freq = np.logspace(np.log10(0.35), np.log10(50.0), 200)
+plt.figure()
+plt.grid(True)
+plt.title("Aperture efficiency - SKA1 dish")
+plt.ylabel("Aperture efficiency")
+plt.xlabel("Frequency (GHz)")
+plt.semilogx(freq, etaA(freq), 'o')
+plt.show()
 
 # Collecting Area
 Aphys = m.pi*D*D/4.0      # Physical collecting area
-etaA  = lambda freqGHz: etaF(freqGHz)*etaPh(freqGHz)*etaD(freqGHz)   # Aperture efficiency
 Aeff  = lambda freqGHz: Aphys*etaA(freqGHz)        # Effective collecting area
 
-## Print out a few things to check values
-#print "freqGHz etaPh etaD etaF etaA Aphys Aeff"
-#for i in range(1,10):
-#    f = i*1.0
-#    print i, etaPh(f), etaD(f), etaF(f), etaA(f), Aphys, Aeff(i*1.0)
-#f = 0.7
-#print f, etaPh(f), etaD(f), etaF(f), etaA(f), Aphys, Aeff(i*1.0)
-#f = 1.4
-#print f, etaPh(f), etaD(f), etaF(f), etaA(f), Aphys, Aeff(i*1.0)
-#f = 2.4
-#print f, etaPh(f), etaD(f), etaF(f), etaA(f), Aphys, Aeff(i*1.0)
-#f = 4.0
-#print f, etaPh(f), etaD(f), etaF(f), etaA(f), Aphys, Aeff(i*1.0)
-#f = 6.6
-#print f, etaPh(f), etaD(f), etaF(f), etaA(f), Aphys, Aeff(i*1.0)
-#f = 12.0
-#print f, etaPh(f), etaD(f), etaF(f), etaA(f), Aphys, Aeff(i*1.0)
-#f = 18.0
-#print f, etaPh(f), etaD(f), etaF(f), etaA(f), Aphys, Aeff(i*1.0)
-
-# Plot eta as a func of freq
-#freq = np.linspace(0.35, 50.0, 200)
-freq = np.logspace(np.log10(0.35), np.log10(50.0), 200) # Makes more space to plot in log10(frequency)
-plt.figure()
-#plt.subplot(111, projection="aitoff")
-plt.title("Various stuff")
-plt.ylabel("Aperture efficiency")
-plt.xlabel("Frequency (GHz)")
-#plt.grid(True)
-plt.semilogx(freq, etaA(freq), 'o')
-#plt.plot(freq,etaA(freq))
-plt.show()
-
 # System Temperature
 
-# System Temperature
-#Tsys = x(Trcv + Tspill + Tsky)*exp(tau*sec(zenith)) # function of freq and zenith angle
-# x(T) = ((h*nu)/(k*T))/(exp(h*nu/k*T)-1)
-#tau  = ?
-#     = 0.005 # eye-ball this off Robert's plot, this is obviously frequency dependent. Add proper function when I get the vals
-
+# Receiver Temperature
 Trcv = lambda freqGHz: (11.5 + 65*(freqGHz - 0.65)**2)*(np.heaviside((freqGHz-0.35),1.0)-np.heaviside((freqGHz-0.95),0.0)) + (7.5)*(np.heaviside((freqGHz-0.95),0.0)-np.heaviside((freqGHz-4.6),0.0)) + (4.4 + 0.69*freqGHz)* (np.heaviside((freqGHz-4.6),0.0)-np.heaviside((freqGHz-50.0),0.0))
-f = np.logspace(np.log10(0.35),np.log10(50),200)
-plt.semilogx(f,Trcv(f))
-plt.title("Various stuff")
-plt.ylabel("Receiver Temperature")
-plt.xlabel("Frequency (GHz)")
-#for i in range(0,3,100):
-#    f = i*1.0
-#    print i,Trcv(f)
-plt.show()
 
-Tspill = 3.0 # assumed to be this for all Bands but (a) is frequency dependent; (b) is zenith angle dependent - 3 K is thought to be appropriate for zenith < 45 deg; (c) the frequency dependence would actually be such that this should actually be a bit worse for Band 1 as it is not an octave feed.
-Tsky = 1.0
+# Spillover Temperature
+Tspill = lambda freqGHz: 3.0 + freqGHz*0.0 # assumed to be this for all Bands but (a) is frequency dependent; (b) is zenith angle dependent - 3 K is thought to be appropriate for zenith < 45 deg; (c) the frequency dependence would actually be such that this should actually be a bit worse for Band 1 as it is not an octave feed.
+
+# Sky Temperature
 T408 = 17.1
-Tgal = lambda freqGHz: T408*(0.408/(freqGHz))**(2.75) # an off-plane approximation, best 10% line-of-sight
+Tgal = lambda freqGHz: T408*(0.408/(freqGHz))**(2.75) # an off-plane approximation, best 10% line-of-sight, need to do this properly taking gl and gb inputs and importing Haslam map
 Tcmb = 2.73
 Tatm = 1.0 # need to add the correct freq dependence
 Tsky = lambda freqGHz: Tgal(freqGHz) + Tcmb + Tatm
 
+tau      = 0.01    # just eye-balled a reasonable value until I have the full function
+Tx = lambda freqGHz, temp: (((h_over_k*freqGHz*1.0e9)/(temp))/(np.exp((h_over_k*freqGHz*1.0e9)/(temp)) - 1.0 ))*temp*np.exp(tau*zenith*m.pi/180.0)
+
+Tsys = lambda f: Tx(f,(Trcv(f)+Tspill(f)+Tsky(f)))
+
+f = np.logspace(np.log10(0.35),np.log10(50),200)
+plt.grid(True)
+plt.semilogx(f,Trcv(f),label='Receiver Temp.')
+plt.semilogx(f,Tspill(f),label='Spillover Temp.')
+plt.semilogx(f,Tsky(f),label='Sky Temp. (Gal+CMB+Atm)')
+plt.semilogx(f,Tsys(f),label='Tsys')
+plt.title("Temperature contributions")
+plt.ylabel("Temperature (K)")
+plt.xlabel("Frequency (GHz)")
+plt.legend()
+plt.show()
+
 # Gain - single dish
 f = np.logspace(np.log10(0.35),np.log10(50),200)
-plt.semilogx(f,Aeff(f)/(Trcv(f)+Tspill+Tsky(f)))
-plt.title("Various stuff")
+plt.grid(True)
+plt.semilogx(f,Aeff(f)/(Trcv(f)+Tspill(f)+Tsky(f)))
+plt.title("Gain - single SKA1-Mid Dish")
+plt.ylabel("Aeff/Tsys")
+plt.xlabel("Frequency (GHz)")
+plt.show()
+
+# Gain - user-requested sub-array
+# need to read in the configs, for now just do whole array
+# 
+# Also compare some actually relevant telescopes, maybe a different flag for imaging- and NIP-relevant ones to show
+f = np.logspace(np.log10(0.35),np.log10(50),200)
+plt.grid(True)
+plt.semilogx(f,133.0*Aeff(f)/(Trcv(f)+Tspill(f)+Tsky(f)))
+plt.title("Gain - entire SKA1-Mid array (133 SKA1 + 64 MeerKAT)")
 plt.ylabel("Aeff/Tsys")
 plt.xlabel("Frequency (GHz)")
 plt.show()
@@ -141,16 +144,3 @@ sys.exit()
 #     = 6.5 + 6.8*|(nu/GHz) - 1.65|**1.5 K # L band
 #     = 9 + (nu/GHz) K                     # S band
 #Tspill = 5 K # again this should be zenith and frequency dependent
-
-# Common
-#Tsky = Tgal*exp(-tau*sec(zenith)) + Tcmb*exp(-tau*sec(zenith)) + Tatm
-# Tgal = ?     # This is actually gl and gb dependent, and basically taken from the Haslam map scaled by the Press et al. spectral index. 
-#  Tgal = T408*(0.408/(nu/GHz))**2.75 K # an off-plane approximation
-#   T408 = 17.1 K # 10th percentile
-#   T408 = 25.2 K # 50th percentile
-#   T408 = 54.8 K # 90th percentile
-# Tcmb = 2.73 K
-# Tatm = ?
-#      = 1 K # assume some value, obviously this is frequency dependent and rises at high freq. Add proper function when I get the vals
-
-# Gain
