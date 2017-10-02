@@ -18,15 +18,18 @@ import argparse
 import sys
 import math as m
 import numpy as np
+from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('-radius', type=float, dest='radius', help='choose distance from the array centre, in km, for chosen sub-array (default: entire array)', default=150.0)
 parser.add_argument('-glgb', nargs=2, type=float, dest='coord', help='enter specific Galactic coordinates to use (default: gl=180.0, gb=-90.0)', default=[180.0,-90.0])
+parser.add_argument('-gallos', dest='gal', help='choose either 10th, 50th or 90th percentile value for the galaxy contribution to the sky temperature (low/medium/high, default: low)', default='low')
+parser.add_argument('-pwv', dest='pwv', help='choose either 5mm, 10mm or 20mm for the PWV value for choosing (a) the zenith opacity, and (b) the atmospheric temperature contribution to the sky temperature (low/medium/high, default: low)', default="low")
 parser.add_argument('-tel', dest='tel', help='choose telescope (SKA or MeerKAT, default: SKA)', default="SKA")
 parser.add_argument('-nelements', type=int, dest='nelements', help='choose the inner nelements elements (default: entire array)', default=197)
-parser.add_argument('-pwv', type=float, dest='pwv', help='choose a precipitable water vapo(u)r value in mm (default: 5.0)', default=5.0)
+#parser.add_argument('-pwv', type=float, dest='pwv', help='choose a precipitable water vapo(u)r value in mm (default: 5.0)', default=5.0)
 parser.add_argument('-zenith', type=float, dest='zenith', help='choose a zenith angle in degrees (default: 0.0)', default=0.0)
 parser.add_argument('--version', action='version', version='%(prog)s 0.0.1')
 args = parser.parse_args()
@@ -35,8 +38,9 @@ args = parser.parse_args()
 tel = args.tel
 gl = args.coord[0]
 gb = args.coord[1]
+gal = args.gal
 zenith = args.zenith
-wpv = args.wpv
+pwv = args.pwv
 radius = args.radius
 nelements = args.nelements
 
@@ -44,6 +48,7 @@ nelements = args.nelements
 speedoflight = 3.0e+8 # m/s 
 wavelength = lambda freqGHz: 1.0e-9*speedoflight/freqGHz
 h_over_k = 4.8e-11 # Planck's constant divided by Boltzmann's constant in s*K
+nfreqs = 2000      # number of points at which to sample frequency for output plots etc.
 
 if tel == "SKA":
     D = 15.0 # dish diameter in metres
@@ -90,18 +95,44 @@ Trcv = lambda freqGHz: (11.5 + 65*(freqGHz - 0.65)**2)*(np.heaviside((freqGHz-0.
 Tspill = lambda freqGHz: 3.0 + freqGHz*0.0 # assumed to be this for all Bands but (a) is frequency dependent; (b) is zenith angle dependent - 3 K is thought to be appropriate for zenith < 45 deg; (c) the frequency dependence would actually be such that this should actually be a bit worse for Band 1 as it is not an octave feed.
 
 # Sky Temperature
-T408 = 17.1
-Tgal = lambda freqGHz: T408*(0.408/(freqGHz))**(2.75) # an off-plane approximation, best 10% line-of-sight, need to do this properly taking gl and gb inputs and importing Haslam map
+## Tgal
+## At the minute can only do 10th, 50th and 90the percentile values for Tgal 
+## Need to add any line of sight
+## For now this is fine as it allows a direct comparison with Robert's calculations
+if (gal == "low"):
+    T408 = 17.1
+elif (gal == "medium"):
+    T408 = 25.2
+elif (gal == "high"):
+    T408 = 54.8
+Tgal = lambda freqGHz: T408*(0.408/(freqGHz))**(2.75) # an off-plane approximation, need to do this more generally
+## Tcmb
 Tcmb = 2.73
-Tatm = 1.0 # need to add the correct freq dependence
-Tsky = lambda freqGHz: Tgal(freqGHz) + Tcmb + Tatm
+## Tatm
+freq_array = np.genfromtxt("SKA_Tatm.txt", usecols=0)
+if (pwv == "low"):
+    Tatm_array = np.genfromtxt("SKA_Tatm.txt", usecols=1)
+elif (pwv == "medium"):
+    Tatm_array = np.genfromtxt("SKA_Tatm.txt", usecols=2)
+elif (pwv == "high"):
+    Tatm_array = np.genfromtxt("SKA_Tatm.txt", usecols=2)
+Tatm = interp1d(freq_array, Tatm_array, kind='cubic')
+Tsky = lambda freqGHz: Tgal(freqGHz) + Tcmb + Tatm(freqGHz)
+### Opacity
+if (pwv == "low"):
+    tau_array = np.genfromtxt("SKA_tau.txt", usecols=1)
+elif (pwv == "medium"):
+    tau_array = np.genfromtxt("SKA_tau.txt", usecols=2)
+elif (pwv == "high"):
+    tau_array = np.genfromtxt("SKA_tau.txt", usecols=2)
+tau = interp1d(freq_array, tau_array, kind='cubic')
 
-tau      = 0.01    # just eye-balled a reasonable value until I have the full function
-Tx = lambda freqGHz, temp: (((h_over_k*freqGHz*1.0e9)/(temp))/(np.exp((h_over_k*freqGHz*1.0e9)/(temp)) - 1.0 ))*temp*np.exp(tau*zenith*m.pi/180.0)
+#tau      = 0.01    # just eye-balled a reasonable value until I have the full function
+Tx = lambda freqGHz, temp: (((h_over_k*freqGHz*1.0e9)/(temp))/(np.exp((h_over_k*freqGHz*1.0e9)/(temp)) - 1.0 ))*temp*np.exp(tau(freqGHz)*zenith*m.pi/180.0)
 
 Tsys = lambda f: Tx(f,(Trcv(f)+Tspill(f)+Tsky(f)))
 
-f = np.logspace(np.log10(0.35),np.log10(50),200)
+f = np.logspace(np.log10(0.35),np.log10(50),nfreqs)
 plt.grid(True)
 plt.semilogx(f,Trcv(f),label='Receiver Temp.')
 plt.semilogx(f,Tspill(f),label='Spillover Temp.')

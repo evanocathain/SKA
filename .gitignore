@@ -17,3 +17,5 @@ Configuration/parkes
 Configuration/pulsarFoMlog.pdf
 Configuration/ska_fast_comparison
 Sensitivity/sens_notes
+Sensitivity/SKA_Tsky.txt
+Sensitivity/atm-to-am.awk
