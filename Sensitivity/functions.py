@@ -65,7 +65,7 @@ def get_tsys(telescope, gal, pwv, zenith):
     
     # Receiver & Spillover Temperature
     if telescope == "SKA":
-        Trcv = lambda freqGHz: (11.5 + 65*(freqGHz - 0.65)**2)*(np.heaviside((freqGHz-0.35),1.0)-np.heaviside((freqGHz-0.95),0.0)) + (7.5)*(np.heaviside((freqGHz-0.95),0.0)-np.heaviside((freqGHz-4.6),0.0)) + (4.4 + 0.69*freqGHz)*(np.heaviside((freqGHz-4.6),0.0)-np.heaviside((freqGHz-50.0),0.0))
+        Trcv = lambda freqGHz: (15.0 + 30*(freqGHz - 0.75)**2)*(np.heaviside((freqGHz-0.35),1.0)-np.heaviside((freqGHz-0.95),0.0)) + (7.5)*(np.heaviside((freqGHz-0.95),0.0)-np.heaviside((freqGHz-4.6),0.0)) + (4.4 + 0.69*freqGHz)*(np.heaviside((freqGHz-4.6),0.0)-np.heaviside((freqGHz-50.0),0.0))
         Tspill = lambda freqGHz: 3.0 + freqGHz*0.0 # assumed to be this for all Bands but (a) is frequency dependent; (b) is zenith angle dependent - 3 K is thought to be appropriate for zenith < 45 deg; (c) the frequency dependence would actually be such that this should actually be a bit worse for Band 1 as it is not an octave feed.
 
     elif telescope == "MeerKAT":

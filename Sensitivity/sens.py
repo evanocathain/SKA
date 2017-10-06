@@ -28,12 +28,12 @@ nfreqs = 2000      # number of points at which to sample frequency for output pl
 # Parse command line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('-radius', type=float, dest='radius', help='choose distance from the array centre, in km, for chosen sub-array (default: entire array)', default=150.0)
-parser.add_argument('-glgb', nargs=2, type=float, dest='coord', help='enter specific Galactic coordinates to use (default: gl=180.0, gb=-90.0)', default=[180.0,-90.0])
+parser.add_argument('-glgb', nargs=2, type=float, dest='coord', help='enter specific Galactic coordinates to use (default: gl=180.0, gb=-90.0) NOT DONE YET', default=[180.0,-90.0])
 parser.add_argument('-gallos', dest='gal', help='choose either 10th, 50th or 90th percentile value for the galaxy contribution to the sky temperature (low/medium/high, default: low)', default='low')
 parser.add_argument('-pwv', dest='pwv', help='choose either 5mm, 10mm or 20mm for the PWV value for choosing (a) the zenith opacity, and (b) the atmospheric temperature contribution to the sky temperature (low/medium/high, default: low)', default="low")
-parser.add_argument('-tel', dest='tel', help='choose telescope (SKA or MeerKAT, default: SKA)', default="SKA")
+parser.add_argument('-tel', dest='tel', help='choose SKA or MeerKAT dishes only (default: use both)', default="both")
 parser.add_argument('-nelements', type=int, dest='nelements', help='choose the inner nelements elements (default: entire array)', default=197)
-#parser.add_argument('-pwv', type=float, dest='pwv', help='choose a precipitable water vapo(u)r value in mm (default: 5.0)', default=5.0)
+parser.add_argument('-o', dest='output', help='choose the type of output - plot, file or both (default: plot) NOT DONE YET', default="plot")
 parser.add_argument('-zenith', type=float, dest='zenith', help='choose a zenith angle in degrees (default: 0.0)', default=0.0)
 parser.add_argument('--version', action='version', version='%(prog)s 0.0.1')
 args = parser.parse_args()
@@ -74,19 +74,70 @@ plt.show()
 # Also compare some actually relevant telescopes, maybe a different flag for imaging- and NIP-relevant ones to show
 f = np.logspace(np.log10(0.35),np.log10(50),200)
 plt.grid(True)
-plt.loglog(f,133.0*(Aeff_SKA(f)/Tsys_SKA(f))+64.0*(Aeff_MK(f)/Tsys_MK(f)))
+plt.loglog(f,133.0*(Aeff_SKA(f)/Tsys_SKA(f))+64.0*(Aeff_MK(f)/Tsys_MK(f)), label='my numbers')
 plt.title("Gain - entire SKA1-Mid array (133 SKA1 + 64 MeerKAT)")
 plt.ylabel("Aeff/Tsys")
 plt.xlabel("Frequency (GHz)")
+
+# Sanity check
+roberts_freq = np.genfromtxt("roberts_numbers_mid",usecols=0)
+roberts_gain = np.genfromtxt("roberts_numbers_mid",usecols=2)
+plt.loglog(roberts_freq,roberts_gain,label='Robert numbers')
+plt.legend()
+
 plt.show()
+
+if ((radius < 150.0) or (nelements < 197)):
+
+    # Read in the array configuration
+    array = np.genfromtxt("../Configuration/MID_dist_metres.txt",dtype=[('name','S6'),('xm','f8'),('ym','f8')],skip_header=0,usecols=(1,2,3)) # NB this is an array of tuples, not a 2-D array, due to carrying the name label for each dish
+    dist = np.zeros(np.size(array))    # work out the distance from centre in km
+    for i in range(0,np.size(array)):
+        dist[i] = 0.001*np.sqrt(array[i][1]*array[i][1]+array[i][2]*array[i][2])
+    array = array[np.argsort(dist)]
+    dist = dist[np.argsort(dist)]
+    # Choose the sub-array of interest
+    if (radius < 150.0): # if radius specified re-work out nelements, i.e. radius flag over-rules nelements flag if both set
+        subarray = array[np.where( dist < radius)]
+        subdist = dist[np.where( dist < radius)]
+        nelements = subarray.shape[0]
+    Nska = Nmk = 0
+    for i in range(0,nelements):
+        if subarray[i][0][0] == 'M':
+            Nmk +=1
+        elif subarray[i][0][0] == 'S':
+            Nska +=1
+    print "Considering a radius of %.1f"%(subdist[nelements-1])
+    print "Considering %d SKA and %d MeerKAT dishes"%(Nska,Nmk)
+    plt.grid(True)
+    plt.loglog(f,Nska*(Aeff_SKA(f)/Tsys_SKA(f))+Nmk*(Aeff_MK(f)/Tsys_MK(f)))
+    plt.title("Gain - subarray radius %.1f km - %d SKA1 + %d MeerKAT array"%(radius,Nska,Nmk))
+    plt.ylabel("Aeff/Tsys")
+    plt.xlabel("Frequency (GHz)")
+    plt.show()
+
 
 # Gain - sub-array size of choice
 # work out config for radius of choice
 # plot appropriately scaled gain curves
-sys.exit()
 
-# MeerKAT dish
-#Trcv = 12 K                               # UHF band
-#     = 6.5 + 6.8*|(nu/GHz) - 1.65|**1.5 K # L band
-#     = 9 + (nu/GHz) K                     # S band
-#Tspill = 5 K # again this should be zenith and frequency dependent
+# Overplot other pulsar-survey-relevant telescopes
+# FAST MB-19
+# Arecibo PALFA
+# Effelsberg MB-7
+# GBT GBNCC 350 MHz setup
+# Parkes MB-13
+
+# Effelsberg MB-7, central beam has Gain of 1.5 Jy/K and ring of 6 have 1.3 Jy/K. These correspond to aperture efficiencies of eta=0.525 and eta=0.455. Aphys = pi*100^2/4. 
+
+# Also want an FRB-relevant plot with an FRB search FOM
+# perhaps have logN-logS slope as an input choice
+# UTMOST
+# ASKAP Fly's Eye
+# DSA -> ask Vikram for numbers
+# WSRT Apertif
+# CHIME
+# HIRAX
+# MeerKAT
+
+sys.exit()
