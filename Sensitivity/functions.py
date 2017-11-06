@@ -9,7 +9,15 @@ import matplotlib.pyplot as plt
 h_over_k = 4.8e-11 # Planck's constant divided by Boltzmann's constant in s*K
 nfreqs = 2000      # number of points at which to sample frequency for output plots etc.
 
-def get_aeff(telescope):
+def get_aeff(telescope,plot):
+
+#    if telescope == "LOW":
+#    ## Tatm
+#        freq_array = np.genfromtxt("SKA_LOW.txt", usecols=0)
+#        Aeff_array = np.genfromtxt("SKA_LOW.txt", usecols=1)
+#        Aeff = interp1d(freq_array, Aeff_array, kind='cubic')
+#        Aeff = lambda freqGHz: Aeff(freqGHz)
+
     if telescope == "SKA":
         D = 15.0 # dish diameter in metres
         etaF  = lambda freqGHz: 0.92 - 0.04*np.abs(np.log10(freqGHz)) # feed illumination
@@ -26,6 +34,9 @@ def get_aeff(telescope):
         Ap   = 0.89     #?? # unitless constant
         As   = 0.98     #?? # unitless constant
 
+    elif telescope == "Effelsberg":
+        D    = 100.0 # dish diameter in metres
+        
     else:
         print "No idea what type of telescope I'm supposed to be calculating for. FAIL."
         sys.exit(-1)
@@ -40,28 +51,34 @@ def get_aeff(telescope):
     etaPh = lambda freqGHz: np.exp(-(DeltaPh(freqGHz))**2.0) 
     etaD  = lambda freqGHz: 1.0 - 20.0*(wavelength(freqGHz)/D)**(1.5)
     etaA  = lambda freqGHz: etaF(freqGHz)*etaPh(freqGHz)*etaD(freqGHz)   # Overall aperture efficiency
+#    elif telescope == "Effelsberg":
+#        etaA  = lambda freqGHz: 0.525 + freqGHz*0.0
 
-    freq = np.logspace(np.log10(0.35), np.log10(50.0), 200)
-    plt.figure()
-    plt.grid(True)
-    plt.title("Aperture efficiency - %s dish"%(telescope))
-    plt.ylabel("Aperture efficiency")
-    plt.xlabel("Frequency (GHz)")
-    plt.semilogx(freq, etaA(freq), 'o')
-    plt.show()
+    freq = np.logspace(np.log10(0.350), np.log10(50.0), 200)
+    if plot == True:
+        plt.figure()
+        plt.grid(True)
+        plt.title("Aperture efficiency - %s dish"%(telescope))
+        plt.ylabel("Aperture efficiency")
+        plt.xlabel("Frequency (GHz)")
+        plt.semilogx(freq, etaA(freq), 'o')
+        plt.show()
 
     # Collecting Area
     Aphys = m.pi*D*D/4.0                               # Physical collecting area
 
     if telescope == "SKA":
         Aeff  = lambda freqGHz: Aphys*etaA(freqGHz)        # Effective collecting area
-
     elif telescope == "MeerKAT":
         Aeff  = lambda freqGHz: Aphys*etaA(freqGHz)*(np.heaviside((freqGHz-0.58), 1.0)-np.heaviside((freqGHz-3.05),1.0))        # Effective collecting area
+#    elif telescope == "Low":
+#        Aeff  = lambda freqGHz: Aphys*etaA(freqGHz)*(np.heaviside((freqGHz-0.050), 1.0)-np.heaviside((freqGHz-0.350),1.0))        # Effective collecting area
+    elif telescope == "Effelsberg":
+        Aeff  = lambda freqGHz: Aphys*etaA(freqGHz)*(np.heaviside((freqGHz-1.0), 1.0)-np.heaviside((freqGHz-2.0),1.0))        # Effective collecting area
 
     return Aeff
 
-def get_tsys(telescope, gal, pwv, zenith):
+def get_tsys(telescope, gal, pwv, zenith, plot):
     
     # Receiver & Spillover Temperature
     if telescope == "SKA":
@@ -71,6 +88,10 @@ def get_tsys(telescope, gal, pwv, zenith):
     elif telescope == "MeerKAT":
         Trcv = lambda freqGHz: (11.0-4.5*(freqGHz-0.58))*(np.heaviside((freqGHz-0.58),1.0)-np.heaviside((freqGHz-1.02),0.0)) + (7.5+6.8*(np.abs(freqGHz-1.65))**1.5)*(np.heaviside((freqGHz-1.02),0.0)-np.heaviside((freqGHz-1.65),0.0)) + (7.5)*(np.heaviside((freqGHz-1.65),0.0)-np.heaviside((freqGHz-3.05),0.0))
         Tspill = lambda freqGHz: 4.0 + freqGHz*0.0
+
+    elif telescope == "Effelsberg":
+        Trcv = lambda freqGHz: 21.0 + freqGHz*0.0
+        Tspill = lambda freqGHz: 0.0 + freqGHz*0.0 # don't know
 
     # Sky Temperature
     ## Tgal
@@ -117,15 +138,16 @@ def get_tsys(telescope, gal, pwv, zenith):
     Tsys = lambda f: Tx(f,(Trcv(f)+Tspill(f)+Tsky(f)))
 
     f = np.logspace(np.log10(0.35),np.log10(50),nfreqs)
-    plt.grid(True)
-    plt.semilogx(f,Trcv(f),label='Receiver Temp.')
-    plt.semilogx(f,Tspill(f),label='Spillover Temp.')
-    plt.semilogx(f,Tsky(f),label='Sky Temp. (Gal+CMB+Atm)')
-    plt.semilogx(f,Tsys(f),label='Tsys')
-    plt.title("Temperature contributions, %2dth percentile $T_{\mathrm{Gal}}$, PWV %.1f mm"%(tgal_pc,pwv_mm))
-    plt.ylabel("Temperature (K)")
-    plt.xlabel("Frequency (GHz)")
-    plt.legend()
-    plt.show()
+    if (plot == True):
+        plt.grid(True)
+        plt.semilogx(f,Trcv(f),label='Receiver Temp.')
+        plt.semilogx(f,Tspill(f),label='Spillover Temp.')
+        plt.semilogx(f,Tsky(f),label='Sky Temp. (Gal+CMB+Atm)')
+        plt.semilogx(f,Tsys(f),label='Tsys')
+        plt.title("Temperature contributions, %2dth percentile $T_{\mathrm{Gal}}$, PWV %.1f mm"%(tgal_pc,pwv_mm))
+        plt.ylabel("Temperature (K)")
+        plt.xlabel("Frequency (GHz)")
+        plt.legend()
+        plt.show()
 
     return Tsys, f
