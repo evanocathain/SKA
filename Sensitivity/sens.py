@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 from functions import *
 
 h_over_k = 4.8e-11 # Planck's constant divided by Boltzmann's constant in s*K
+kB = 1380.0        # Boltzmann's constant in Jy*m^2*K^-1
 nfreqs = 2000      # number of points at which to sample frequency for output plots etc.
 
 # Parse command line arguments
@@ -65,12 +66,23 @@ Tsys_MK, f  = get_tsys("MeerKAT",gal,pwv,zenith,plot)
 #Tsys_Eff, f = get_tsys("Effelsberg",gal,pwv,zenith,plot)
 
 # Gain - single dish
+# in m^2/K (Tsys, i.e. LoS dependent)
 f = np.logspace(np.log10(0.35),np.log10(50),200)
 plt.grid(True)
 plt.semilogx(f,Aeff_SKA(f)/Tsys_SKA(f)) #(Trcv(f)+Tspill(f)+Tsky(f)))
 plt.semilogx(f,Aeff_MK(f)/Tsys_MK(f)) #(Trcv(f)+Tspill(f)+Tsky(f)))
 plt.title("Gain - single Dish")
 plt.ylabel("Aeff/Tsys (m^2/K)")
+plt.xlabel("Frequency (GHz)")
+plt.show()
+
+# in K/Jy (LoS independent but no indication of Tsys impact on performance)
+f = np.logspace(np.log10(0.35),np.log10(50),200)
+plt.grid(True)
+plt.semilogx(f,Aeff_SKA(f)/(2*kB))
+plt.semilogx(f,Aeff_MK(f)/(2*kB))
+plt.title("Gain - single Dish")
+plt.ylabel("Aeff/(2*kB) (K/Jy)")
 plt.xlabel("Frequency (GHz)")
 plt.show()
 
@@ -125,6 +137,12 @@ if ((radius < 150.0) or (nelements < 197)):
     plt.loglog(f,Nska*(Aeff_SKA(f)/Tsys_SKA(f))+Nmk*(Aeff_MK(f)/Tsys_MK(f)))
     plt.title("Gain - subarray radius %.1f km - %d SKA1 + %d MeerKAT"%(radius,Nska,Nmk))
     plt.ylabel("Aeff/Tsys (m^2/K)")
+    plt.xlabel("Frequency (GHz)")
+    plt.show()
+    plt.grid(True)
+    plt.loglog(f,Nska*(Aeff_SKA(f)/(2*kB))+Nmk*(Aeff_MK(f)/(2*kB)))
+    plt.title("Gain - subarray radius %.1f km - %d SKA1 + %d MeerKAT"%(radius,Nska,Nmk))
+    plt.ylabel("Aeff/(2*kB) (K/Jy)")
     plt.xlabel("Frequency (GHz)")
     plt.show()
 
