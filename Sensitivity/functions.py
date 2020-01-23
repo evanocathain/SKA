@@ -133,7 +133,7 @@ def get_tsys(telescope, gal, pwv, zenith, plot):
     tau = interp1d(freq_array, tau_array, kind='cubic')
 
     #tau      = 0.01    # just eye-balled a reasonable value until I have the full function
-    Tx = lambda freqGHz, temp: (((h_over_k*freqGHz*1.0e9)/(temp))/(np.exp((h_over_k*freqGHz*1.0e9)/(temp)) - 1.0 ))*temp*np.exp(tau(freqGHz)*zenith*m.pi/180.0)
+    Tx = lambda freqGHz, temp: (((h_over_k*freqGHz*1.0e9)/(temp))/(np.exp((h_over_k*freqGHz*1.0e9)/(temp)) - 1.0 ))*temp*np.exp(tau(freqGHz)/np.cos(zenith*m.pi/180.0))
 
     Tsys = lambda f: Tx(f,(Trcv(f)+Tspill(f)+Tsky(f)))
 
