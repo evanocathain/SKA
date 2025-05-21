@@ -118,24 +118,28 @@ if ((radius < 150.0) or (nelements < 197)):
     dist = dist[np.argsort(dist)]
     # Choose the sub-array of interest
     if (radius < 150.0): # if radius specified re-work out nelements, i.e. radius flag over-rules nelements flag if both set
-        subarray = array[np.where( dist < radius)]
-        subdist = dist[np.where( dist < radius)]
+        subarray  = array[np.where( dist < radius)]
+        subdist   = dist[np.where( dist < radius)]
         nelements = subarray.shape[0]
+    if (radius == 150.0): # radius wasn't specified, but nelements was
+        subarray  = array[np.where( dist < radius)]
+        subdist   = dist[np.where( dist < radius)]
+        radius    = dist[nelements-1]
     Nska = Nmk = 0
     for i in range(0,nelements):
-        if subarray[i][0][0] == 'M':
+        if subarray[i][0][0] == 77:     # 77 is ascii for 'M', for MeerKAT dishes
             Nmk +=1
-        elif subarray[i][0][0] == 'S':
+        elif subarray[i][0][0] == 83:   # 83 is ascii for 'S', for SKA dishes
             Nska +=1
     if (tel == "mk"):
         Nska = 0
     if (tel == "ska"):
         Nmk = 0
-    print("Considering a radius of %.1f"%(subdist[nelements-1]))
+    print("Considering a radius of %.2f km"%(dist[nelements-1]))
     print("Considering %d SKA and %d MeerKAT dishes"%(Nska,Nmk))
     plt.grid(True)
     plt.loglog(f,Nska*(Aeff_SKA(f)/Tsys_SKA(f))+Nmk*(Aeff_MK(f)/Tsys_MK(f)))
-    plt.title("Gain - subarray radius %.1f km - %d SKA1 + %d MeerKAT"%(radius,Nska,Nmk))
+    plt.title("Gain - subarray radius %.2f km - %d SKA1 + %d MeerKAT"%(radius,Nska,Nmk))
     plt.ylabel("Aeff/Tsys (m^2/K)")
     plt.xlabel("Frequency (GHz)")
     plt.show()
