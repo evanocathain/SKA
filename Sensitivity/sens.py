@@ -131,8 +131,8 @@ if ((radius < 150.0) or (nelements < 197)):
         Nska = 0
     if (tel == "ska"):
         Nmk = 0
-    print "Considering a radius of %.1f"%(subdist[nelements-1])
-    print "Considering %d SKA and %d MeerKAT dishes"%(Nska,Nmk)
+    print("Considering a radius of %.1f"%(subdist[nelements-1]))
+    print("Considering %d SKA and %d MeerKAT dishes"%(Nska,Nmk))
     plt.grid(True)
     plt.loglog(f,Nska*(Aeff_SKA(f)/Tsys_SKA(f))+Nmk*(Aeff_MK(f)/Tsys_MK(f)))
     plt.title("Gain - subarray radius %.1f km - %d SKA1 + %d MeerKAT"%(radius,Nska,Nmk))
@@ -148,6 +148,6 @@ if ((radius < 150.0) or (nelements < 197)):
 
 
 for i in range (0,f.size):
-    print f[i], Nska*(Aeff_SKA(f[i])/Tsys_SKA(f[i]))+Nmk*(Aeff_MK(f[i])/Tsys_MK(f[i]))
+    print(f[i], Nska*(Aeff_SKA(f[i])/Tsys_SKA(f[i]))+Nmk*(Aeff_MK(f[i])/Tsys_MK(f[i])))
 
 sys.exit()
