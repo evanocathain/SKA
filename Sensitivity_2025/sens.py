@@ -32,7 +32,7 @@ parser.add_argument('-radius', type=float, dest='radius', help='choose distance 
 parser.add_argument('-glgb', nargs=2, type=float, dest='coord', help='enter specific Galactic coordinates to use (default: gl=180.0, gb=-90.0) NOT DONE YET', default=[180.0,-90.0])
 parser.add_argument('-gallos', dest='gal', help='choose either 10th, 50th or 90th percentile value for the galaxy contribution to the sky temperature (low/medium/high, default: low)', default='low')
 parser.add_argument('-pwv', dest='pwv', help='choose either 5mm, 10mm or 20mm for the PWV value for choosing (a) the zenith opacity, and (b) the atmospheric temperature contribution to the sky temperature (low/medium/high, default: low)', default="low")
-parser.add_argument('-tel', dest='tel', help='Which telescopes to include - options are all, low, mid, ska (meaning SKA1-Mid dishes only) or mk (default: all)', default="all")
+parser.add_argument('-tel', dest='tel', help='Which telescopes to include - options are all, aastar, mid, ska (meaning SKA1-Mid dishes only) or mk (default: all)', default="all")
 parser.add_argument('-nelements', type=int, dest='nelements', help='choose the inner nelements elements (default: entire array)', default=197)
 parser.add_argument('-o', dest='output', help='choose the type of output - plot, file or both (default: plot)', default="plot")
 parser.add_argument('-zenith', type=float, dest='zenith', help='choose a zenith angle in degrees (default: 0.0)', default=0.0)
@@ -52,6 +52,8 @@ zenith = args.zenith
 pwv = args.pwv
 radius = args.radius
 nelements = args.nelements
+if (tel == "aastar"):
+  nelements=144
 
 # Get the effective collecting area
 Aeff_SKA = get_aeff("SKA",plot)
@@ -107,10 +109,13 @@ plt.show()
 
 Nska = 133
 Nmk  = 64
-if ((radius < 150.0) or (nelements < 197)):
+if ((radius < 150.0) or (nelements < 197) or (tel=="aastar")):
 
     # Read in the array configuration
-    array = np.genfromtxt("../Configuration_2024/MID_dist_metres.txt",dtype=[('name','S6'),('xm','f8'),('ym','f8')],skip_header=0,usecols=(1,2,3)) # NB this is an array of tuples, not a 2-D array, due to carrying the name label for each dish
+    if (tel=="aastar"):
+      array = np.genfromtxt("../Configuration_2024/MID_AAstar_dist_metres.txt",dtype=[('name','S6'),('xm','f8'),('ym','f8')],skip_header=0,usecols=(1,2,3)) # NB this is an array of tuples, not a 2-D array, due to carrying the name label for each dish
+    else:
+      array = np.genfromtxt("../Configuration_2024/MID_dist_metres.txt",dtype=[('name','S6'),('xm','f8'),('ym','f8')],skip_header=0,usecols=(1,2,3)) # NB this is an array of tuples, not a 2-D array, due to carrying the name label for each dish
     dist = np.zeros(np.size(array))    # work out the distance from centre in km
     for i in range(0,np.size(array)):
         dist[i] = 0.001*np.sqrt(array[i][1]*array[i][1]+array[i][2]*array[i][2])
