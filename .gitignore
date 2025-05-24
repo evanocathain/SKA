@@ -1,6 +1,5 @@
 *~
 Figures_of_Merit*
-Configuration_2024/*.gp
 Configuration/plotstuff
 Configuration/TODO
 Configuration/plot_array.py
@@ -39,3 +38,4 @@ Configuration_2024/Low_stations_vs_radius.ps
 Configuration_2024/Mid_dishes_vs_radius.ps
 Configuration_2024/Low_stations_vs_radius.pdf
 Configuration_2024/Mid_dishes_vs_radius.pdf
+Configuration_2024/fast_ska.gp
