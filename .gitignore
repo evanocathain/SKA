@@ -20,11 +20,11 @@ Sensitivit*/atm-to-am.awk
 Sensitivit*/FC1.csv
 Sensitivit*/FC1.xlsx
 Sensitivit*/bigplot.p*
-Sensitivit*/fomplot.p*
 Sensitivit*/NOTES
 Sensitivit*/big_plot.gp
 Sensitivit*/fast_robert
-Sensitivit*/fom_plot.gp
+Sensitivit*/fomplot*
+Sensitivit*/fom_plot*
 Sensitivit*/ska1-low_full
 Sensitivit*/skamid_500m_50pct
 Sensitivit*/skamid_20km_50pct
@@ -41,3 +41,6 @@ Configuration_2024/Mid_dishes_vs_radius.pdf
 Configuration_2024/fast_ska.gp
 Sensitivity_2025/*ps
 Sensitivity_2025/*pdf
+Sensitivity_2025/fom_plot_low.gp
+Sensitivity_2025/fit.log
+Sensitivity_2025/fom_plot_low.gp
