@@ -1,0 +1,20 @@
+# For SKA FRB chapters
+# Make a list of Aeff versus radius at 190 MHz for Low at zenith
+cat LOW_dist_metres.txt  | awk '{print $2,0.001*sqrt($3*$3+$4*$4)}' | sort -g -k2 | awk '{print $0,424.727*NR}' > LowAA4_ID_radius_Aeff
+cat LOW_AAstar_dist_metres.txt  | awk '{print $2,0.001*sqrt($3*$3+$4*$4)}' | sort -g -k2 | awk '{print $0,424.727*NR}' > LowAAstar_ID_radius_Aeff
+awk -v tLNA=35.0 -v tRX=12.0 -v freq=190.0 '{tsky=2.73+20.0*(0.408/(freq*0.001))^(2.75)+288.0*(0.005+0.1314*exp((log(freq*0.001)/log(10)-log(22.23)/log(10))*8.0));tsys=tsky+tLNA+tRX; fov_prim=(1.58/40)^2; fov_ta=500*(1.58/($2*1000*2.0))^2; fov=fov_prim; if (fov_ta < fov_prim) fov=fov_ta; print $1,$2,$3/tsys,fov*(180.0/3.14159)^2}' LowAA4_ID_radius_Aeff > LowAA4_ID_radius_AonT_FoVdeg2
+awk -v tLNA=35.0 -v tRX=12.0 -v freq=190.0 '{tsky=2.73+20.0*(0.408/(freq*0.001))^(2.75)+288.0*(0.005+0.1314*exp((log(freq*0.001)/log(10)-log(22.23)/log(10))*8.0));tsys=tsky+tLNA+tRX; fov_prim=(1.58/40)^2; fov_ta=500*(1.58/($2*1000*2.0))^2; fov=fov_prim; if (fov_ta < fov_prim) fov=fov_ta; print $1,$2,$3/tsys,fov*(180.0/3.14159)^2}' LowAAstar_ID_radius_Aeff > LowAAstar_ID_radius_AonT_FoVdeg2
+
+#Band 2
+# At 1400 MHz (20cm), gain of one dish is:
+# SKA dish 10.16 m^2/K
+# MK dish 6.34 m^2/K
+awk '{print $0,sqrt($3*$3+$4*$4)}' MID_dist_metres.txt | sort -g -k5 | awk -v g=0.0 -v mkgain=6.34 -v skagain=10.16 '{if (substr($2,1,1)=="M") g+=mkgain; if (substr($2,1,1)=="S") g+=skagain; fov_prim=(0.20/15.0)^2; fov_ta=1500*(0.2/($5*2.0))^2; fov=fov_prim; if (fov_ta < fov_prim) fov=fov_ta; print $2,$5*0.001,g,fov*(180.0/3.14159)^2}' > Band2AA4_ID_radius_AonT_FoVdeg2
+awk '{print $0,sqrt($3*$3+$4*$4)}' MID_AAstar_dist_metres.txt | sort -g -k5 | awk -v g=0.0 -v mkgain=6.34 -v skagain=10.16 '{if (substr($2,1,1)=="M") g+=mkgain; if (substr($2,1,1)=="S") g+=skagain; fov_prim=(0.20/15.0)^2; fov_ta=1500*(0.2/($5*2.0))^2; fov=fov_prim; if (fov_ta < fov_prim) fov=fov_ta; print $2,$5*0.001,g,fov*(180.0/3.14159)^2}' > Band2AAstar_ID_radius_AonT_FoVdeg2
+
+#Band 1
+# At 865 MHz (35 cm), gain of one dish is:
+# SKA dish 6.1 m^2/K
+# MK dish 5.2 m^2/K
+awk '{print $0,sqrt($3*$3+$4*$4)}' MID_dist_metres.txt | sort -g -k5 | awk -v g=0.0 -v mkgain=5.2 -v skagain=6.1 '{if (substr($2,1,1)=="M") g+=mkgain; if (substr($2,1,1)=="S") g+=skagain; fov_prim=(0.35/15.0)^2; fov_ta=1500*(0.35/($5*2.0))^2; fov=fov_prim; if (fov_ta < fov_prim) fov=fov_ta; print $2,$5*0.001,g,fov*(180.0/3.14159)^2}' > Band1AA4_ID_radius_AonT_FoVdeg2
+awk '{print $0,sqrt($3*$3+$4*$4)}' MID_AAstar_dist_metres.txt | sort -g -k5 | awk -v g=0.0 -v mkgain=5.2 -v skagain=6.1 '{if (substr($2,1,1)=="M") g+=mkgain; if (substr($2,1,1)=="S") g+=skagain; fov_prim=(0.35/15.0)^2; fov_ta=1500*(0.35/($5*2.0))^2; fov=fov_prim; if (fov_ta < fov_prim) fov=fov_ta; print $2,$5*0.001,g,fov*(180.0/3.14159)^2}' > Band1AAstar_ID_radius_AonT_FoVdeg2
