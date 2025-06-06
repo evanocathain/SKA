@@ -21,7 +21,7 @@ set ytics font "Times, 20"
 
 # Plot the non-SKA components
 plot "<awk '{print $0,sqrt($3*$3+$4*$4)}' ../Configuration_2024/LOW_dist_metres.txt | sort -g -k5 | awk -v g=0.0 -v lowgain=424.7 '{g+=lowgain; fov=1.0/(20.0*20.0); if (500/($5*$5) < fov) fov=500/($5*$5); print $5,g*g*fov}'" w li lt -1, \
-"<awk '{print $0,sqrt($3*$3+$4*$4)}' ../Configuration_2024/LOW_AAstar_dist_metres.txt | sort -g -k5 | awk -v g=0.0 -v lowgain=424.7 '{g+=lowgain; fov=1.0/(20.0*20.0); if (500/($5*$5) < fov) fov=500/($5*$5); print $5,g*g*fov}'" w li lt -1,
+"<awk '{print $0,sqrt($3*$3+$4*$4)}' ../Configuration_2024/LOW_AAstar_dist_metres.txt | sort -g -k5 | awk -v g=0.0 -v lowgain=424.7 '{g+=lowgain; fov=1.0/(20.0*20.0); if (250/($5*$5) < fov) fov=250/($5*$5); print $5,g*g*fov}'" w li lt -1,
 
 
 set arrow from 0.830,91 to 0.860,91 nohead lt 8 front
@@ -29,8 +29,8 @@ set arrow from 0.830,91 to 0.860,91 nohead lt 8 front
 # Label the non-SKA single dish components
 
 # Label the SKA-Mid components
-set label "SKA1-Low AA4" front at 1000,8000000 #font "Times, 20"
-set label "SKA1-Low AA*" front at 400,1200000 #font "Times, 20"
+set label "SKA1-Low AA4 (500 beams)" front at 30,12000000 #font "Times, 20"
+set label "SKA1-Low AA* (250 beams)" front at 180,600000 #font "Times, 20"
 replot
 
 set term postscript enhanced color solid font 'Times, 20'
