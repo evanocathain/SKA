@@ -15,25 +15,25 @@ set grid mxtics
 set grid mytics
 
 # MID
-set ylabel "Number of dishes"
-set xlabel "Distance from array centre (km)"
+set ylabel "Number of dishes" font 'Times, 20'
+set xlabel "Distance from array centre (km)" font 'Times, 20'
 plot "< awk '{print 0.001*sqrt($3*$3+$4*$4)|\"sort -g -k1\"}' MID_dist_metres.txt | cat -n" u 2:1 wi li title "SKA1-Mid AA4"
 replot "< awk '{print 0.001*sqrt($3*$3+$4*$4)|\"sort -g -k1\"}' MID_AAstar_dist_metres.txt | cat -n" u 2:1 wi li title "SKA1-Mid AA*"
 replot "< awk '{if (substr($2,0,1)==\"M\") print 0.001*sqrt($3*$3+$4*$4)|\"sort -g -k1\"}' MID_dist_metres.txt | cat -n" u 2:1 wi li title "MeerKAT"
 #replot "< awk '{if (substr($2,0,1)==\"S\") print 0.001*sqrt($3*$3+$4*$4)|\"sort -g -k1\"}' MID_dist_metres.txt | cat -n" u 2:1 wi li title "SKA1 Dishes"
 
-set terminal postscript enhanced color solid
+set terminal postscript enhanced color solid font 'Times, 20'
 set output "Mid_dishes_vs_radius.ps"
 replot
 pause mouse
 
 # LOW
 set term x11
-set ylabel "Number of stations"
-set xlabel "Distance from array centre (km)"
+set ylabel "Number of stations"  font 'Times, 20'
+set xlabel "Distance from array centre (km)"  font 'Times, 20'
 plot "< awk '{print 0.001*sqrt($3*$3+$4*$4)|\"sort -g -k1\"}' LOW_dist_metres.txt | cat -n" u 2:1 wi li title "SKA1-Low AA4"
 replot "< awk '{print 0.001*sqrt($3*$3+$4*$4)|\"sort -g -k1\"}' LOW_AAstar_dist_metres.txt | cat -n" u 2:1 wi li title "SKA1-Low AA*"
 
-set terminal postscript enhanced color solid
+set terminal postscript enhanced color solid font 'Times, 20'
 set output "Low_stations_vs_radius.ps"
 replot
